@@ -1,0 +1,46 @@
+######################################################
+##  Author: Fiorenzo Tittaferrante                  ##
+##  Date: 2022 May 09                               ##
+##  File: update.yml                                ##
+##  Last update: 2022 May 20                        ##
+##  Purpose: uses an azure VM to create the         ##
+##           Kong container and add plugins.        ##
+######################################################
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - plugin
+      - config
+      - docker-compose.yml
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+- deployment: VMDeploy
+  displayName: DeployVM
+  environment: 
+   name: kong-gateway
+   resourceType: VirtualMachine
+  strategy:
+     runOnce:
+        deploy:   
+          steps:
+
+            # Checkout with persist credentials on VM
+            - checkout: self
+              persistCredentials: true
+
+            # Execute on VM in the directory of the repo downloaded
+            - task: CmdLine@2
+              displayName: Update
+
+              inputs:
+                script: |
+                  echo "Files on $(pwd)"
+                  chmod 744 configure
+                  ./configure

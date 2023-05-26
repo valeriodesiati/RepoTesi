@@ -1,0 +1,13 @@
+######################################################
+##  Author: Valerio Desiati                         ##
+##  Date: 2022 May 11                               ##
+##  File: configure                                 ##
+##  Purpose: starts configurations                  ##
+######################################################
+
+#!/bin/bash
+
+cd script
+chmod 744 addplugin
+./addplugin
+cd ..

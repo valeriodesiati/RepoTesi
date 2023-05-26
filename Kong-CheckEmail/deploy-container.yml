@@ -1,0 +1,56 @@
+######################################################
+##  Author: Fiorenzo Tittaferrante                  ##
+##  Date: 2022 May 09                               ##
+##  Last update: 2022 May 11                        ##
+##  File: deploy-container.yml                      ##
+##  Purpose: when compose.yml change, a new         ##
+##           container is setting up on VM          ##
+######################################################
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - docker-compose.yml
+
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+- deployment: VMDeploy
+  displayName: Deploy to VM
+  environment: 
+   name: kong-gateway
+   resourceType: VirtualMachine
+  strategy:
+     runOnce:
+        deploy:   
+          steps:
+
+            # Checkout with persist credentials on VM
+            - checkout: self
+              persistCredentials: true
+
+            # Execute on VM in the directory of the repo downloaded
+            - task: CmdLine@2
+              displayName: UpdateContainer
+#                workingDirectory: '/home/aesys/azagent/_work/1/s'
+                
+            - task: CmdLine@2
+              inputs:
+                script: |
+                  sudo docker rm $(sudo docker stop $(sudo docker ps -a -q))
+                  sudo docker network rm s_kong-net
+                  sudo docker-compose up -d
+                  echo "Waiting 15 seconds..."
+                  sleep 15
+                  echo "Updating kong"
+                  chmod 777 configure
+                  sudo ./configure
+
+#            - task: Bash@3
+#              inputs:
+#                filePath: '$(System.DefaultWorkingDirectory)/script/starter'

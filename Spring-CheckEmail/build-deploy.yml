@@ -1,0 +1,70 @@
+######################################################
+##  Author: Fiorenzo Tittaferrante                  ##
+##  Date: 2022 May 02                               ##
+##  File: pipeline-build-deploy.yml                 ##
+##  Last update: 2022 May 11                        ##
+##  Purpose: build and deploy the microservices     ##
+##           into azure app service code            ##
+######################################################
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+    - src
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  BUILD_NUMBER: v$(GitVersion.Major).$(GitVersion.Minor)
+
+steps:
+  - task: Maven@3
+    displayName: "Maven Test"
+    inputs:
+      mavenPomFile: 'pom.xml'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.11'
+      mavenVersionOption: 'Default'
+      mavenOptions: '-Xmx3072m'
+      goals: 'test'
+
+  - task: Maven@3
+    displayName: "Maven Deploy"
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenAuthenticateFeed: true
+      publishJUnitResults: false
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.11'
+      mavenVersionOption: 'Default'
+      mavenOptions: '-Xmx3072m'
+      goals: 'deploy'
+
+
+  - task: CopyFiles@2
+    inputs:
+      Contents: '**/*.jar'
+      targetFolder: '$(Build.ArtifactStagingDirectory)' 
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'Spring-ID'
+      publishLocation: 'Container'
+
+
+  - task: AzureRmWebAppDeployment@4
+    displayName: 'Deploy Jar to Azure App Service'
+    inputs:
+      ConnectionType: 'AzureRM'
+      azureSubscription: 'Aesystech-O365-Dev(af0f31ec-6bc5-4e0d-9c47-c509f316251c)'
+      appType: 'webAppLinux'
+      WebAppName: 'RestService-SpringID'
+      packageForLinux: '$(Build.ArtifactStagingDirectory)/**/*.jar'

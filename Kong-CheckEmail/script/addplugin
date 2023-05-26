@@ -1,0 +1,63 @@
+######################################################
+##  Author: Valerio Desiati                         ##
+##  Date: 2022 May 09                               ##
+##  File: addplugin                                 ##
+##  Purpose: starts container and upload plugin     ##
+##           and uploads kong configurations        ##
+######################################################
+
+#!/bin/bash
+cd ..
+FILE=./docker-compose.yml
+if [ ! -f "$FILE" ]; then
+    echo "$FILE does not exist."
+    exit 1
+else
+    echo "$FILE exists."
+fi
+
+container="kong-gateway"
+
+echo "$(date +'%Y-%m-%d at %T') - Using $container container"
+echo "$(date +'%Y-%m-%d at %T') - Starting containers..."
+
+sudo docker-compose stop
+sudo docker-compose up -d
+echo "$(date +'%Y-%m-%d at %T') - Containers started."
+echo "$(date +'%Y-%m-%d at %T') - Starting services..."
+sleep 15
+
+echo "$(date +'%Y-%m-%d at %T') - All started"
+cd plugin
+
+for dir in */ ; do
+
+    sudo docker exec -it --user root $container rm -rf /usr/local/share/lua/5.1/kong/plugins/$dir
+    sudo docker exec -it --user root $container mkdir /usr/local/share/lua/5.1/kong/plugins/$dir
+
+    echo "$(date +'%Y-%m-%d at %T') - Directory created"
+
+    cd $dir
+    sudo docker cp . $container:/usr/local/share/lua/5.1/kong/plugins/$dir/
+    echo "$(date +'%Y-%m-%d at %T') - Contents copied to /usr/local/share/lua/5.1/kong/plugins/$dir"
+    cd ..
+
+done
+
+sudo docker exec -it --user root $container kong reload
+
+cd ..
+curl -s -X POST -H "Content-Type: application/json" -d @./config/checkemail/services.json http://checkemail.westeurope.cloudapp.azure.com:8001/services > /dev/null
+echo "$(date +'%Y-%m-%d at %T') - Services updated"
+
+curl -s -X POST -H "Content-Type: application/json" -d @./config/checkemail/route.json http://checkemail.westeurope.cloudapp.azure.com:8001/services/microservice-checkemail/routes > /dev/null
+echo "$(date +'%Y-%m-%d at %T') - Routes updated"
+
+curl -s -X POST -H "Content-Type: application/json" -d @./config/checkemail/consumer.json http://checkemail.westeurope.cloudapp.azure.com:8001/consumers > /dev/null
+curl -s -X POST -H "Content-Type: application/json" -d @./config/checkemail/consumer2.json http://checkemail.westeurope.cloudapp.azure.com:8001/consumers > /dev/null
+curl -s -X POST -H "Content-Type: application/json" -d @./config/checkemail/consumer3.json http://checkemail.westeurope.cloudapp.azure.com:8001/consumers > /dev/null
+echo "$(date +'%Y-%m-%d at %T') - Consumers updated"
+
+curl -s -X POST -H "Content-Type: application/json" -d @./config/checkemail/jwtplugin.json http://checkemail.westeurope.cloudapp.azure.com:8001/plugins > /dev/null
+curl -s -X POST -H "Content-Type: application/json" -d @./config/checkemail/corsplugin.json http://checkemail.westeurope.cloudapp.azure.com:8001/plugins > /dev/null
+echo "$(date +'%Y-%m-%d at %T') - Plugins updated"
