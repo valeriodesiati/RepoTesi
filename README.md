@@ -94,5 +94,5 @@ L'aggiunta del plugin è stata semplificata aggiungendo due script, `configure` 
 Sono previsti anche gli upload dei servizi, route, consumer e plugin nativi di Kong tramite delle `curl` al link di configurazione del gateway, prendendo le configurazioni da file `.json` nella directory `config/checkemail`.
 
 ## Autori e Copyright
- © Valerio Desiati
+ © Valerio Desiati <br/>
  © Fiorenzo Tittaferrante
