@@ -1,1 +1,3 @@
-Kong-CheckEmail/secrets.yml
+Kong-CheckEmail/.env
+Spring-CheckEmail/src/main/resources/.env
+Spring-CheckEmail/target/classes/.env
